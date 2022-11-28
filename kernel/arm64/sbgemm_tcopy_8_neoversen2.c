@@ -36,6 +36,7 @@ int CNAME(BLASLONG m, BLASLONG n, IFLOAT *a, BLASLONG lda, IFLOAT *b) {
   b_offset = b;
 
   uint16x8_t v0, v1, v2, v3, v4, v5, v6, v7;
+  uint16x4_t v0_h, v1_h, v2_h, v3_h, v4_h, v5_h, v6_h, v7_h;
 
   for (BLASLONG j = 0; j < n / 8; j++) {
     a_offset0 = a_offset;
@@ -92,12 +93,25 @@ int CNAME(BLASLONG m, BLASLONG n, IFLOAT *a, BLASLONG lda, IFLOAT *b) {
     a_offset += 4;
 
     for (BLASLONG i = 0; i < m / 4; i++) {
-      for (BLASLONG line = 0; line < 4; line++) {
-        b_offset[line * 4] = a_offset0[line];
-        b_offset[line * 4 + 1] = a_offset1[line];
-        b_offset[line * 4 + 2] = a_offset2[line];
-        b_offset[line * 4 + 3] = a_offset3[line];
-      }
+      v0_h = vld1_u16(a_offset0);
+      v1_h = vld1_u16(a_offset1);
+      v2_h = vld1_u16(a_offset2);
+      v3_h = vld1_u16(a_offset3);
+
+      v4_h = vtrn1_u16(v0_h, v1_h);
+      v5_h = vtrn2_u16(v0_h, v1_h);
+      v6_h = vtrn1_u16(v2_h, v3_h);
+      v7_h = vtrn2_u16(v2_h, v3_h);
+
+      v0_h = (uint16x4_t)vtrn1_u32((uint32x2_t)v4_h, (uint32x2_t)v6_h);
+      v1_h = (uint16x4_t)vtrn1_u32((uint32x2_t)v5_h, (uint32x2_t)v7_h);
+      v2_h = (uint16x4_t)vtrn2_u32((uint32x2_t)v4_h, (uint32x2_t)v6_h);
+      v3_h = (uint16x4_t)vtrn2_u32((uint32x2_t)v5_h, (uint32x2_t)v7_h);
+
+      vst1_u16(b_offset, v0_h);
+      vst1_u16(b_offset + 4, v1_h);
+      vst1_u16(b_offset + 8, v2_h);
+      vst1_u16(b_offset + 12, v3_h);
 
       b_offset += 16;
       a_offset0 += 4 * lda;
