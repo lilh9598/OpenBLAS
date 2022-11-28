@@ -25,6 +25,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  * *****************************************************************************/
+#include <arm_neon.h>
 
 #include "common.h"
 
@@ -34,6 +35,8 @@ int CNAME(BLASLONG m, BLASLONG n, IFLOAT *a, BLASLONG lda, IFLOAT *b) {
   a_offset = a;
   b_offset = b;
 
+  uint16x8_t v0, v1, v2, v3, v4, v5, v6, v7;
+
   for (BLASLONG j = 0; j < n / 8; j++) {
     a_offset0 = a_offset;
     a_offset1 = a_offset0 + lda;
@@ -42,12 +45,25 @@ int CNAME(BLASLONG m, BLASLONG n, IFLOAT *a, BLASLONG lda, IFLOAT *b) {
     a_offset += 8;
 
     for (BLASLONG i = 0; i < m / 4; i++) {
-      for (BLASLONG line = 0; line < 8; line++) {
-        b_offset[line * 4] = a_offset0[line];
-        b_offset[line * 4 + 1] = a_offset1[line];
-        b_offset[line * 4 + 2] = a_offset2[line];
-        b_offset[line * 4 + 3] = a_offset3[line];
-      }
+      v0 = vld1q_u16(a_offset0);
+      v1 = vld1q_u16(a_offset1);
+      v2 = vld1q_u16(a_offset2);
+      v3 = vld1q_u16(a_offset3);
+
+      v4 = vtrn1q_u16(v0, v1);
+      v5 = vtrn2q_u16(v0, v1);
+      v6 = vtrn1q_u16(v2, v3);
+      v7 = vtrn2q_u16(v2, v3);
+
+      v0 = (uint16x8_t)vtrn1q_u32((uint32x4_t)v4, (uint32x4_t)v6);
+      v1 = (uint16x8_t)vtrn1q_u32((uint32x4_t)v5, (uint32x4_t)v7);
+      v2 = (uint16x8_t)vtrn2q_u32((uint32x4_t)v4, (uint32x4_t)v6);
+      v3 = (uint16x8_t)vtrn2q_u32((uint32x4_t)v5, (uint32x4_t)v7);
+
+      vst1q_u16(b_offset, (uint16x8_t)vtrn1q_u64((uint64x2_t)v0, (uint64x2_t)v1));
+      vst1q_u16(b_offset + 8, (uint16x8_t)vtrn1q_u64((uint64x2_t)v2, (uint64x2_t)v3));
+      vst1q_u16(b_offset + 16, (uint16x8_t)vtrn2q_u64((uint64x2_t)v0, (uint64x2_t)v1));
+      vst1q_u16(b_offset + 24, (uint16x8_t)vtrn2q_u64((uint64x2_t)v2, (uint64x2_t)v3));
 
       b_offset += 32;
       a_offset0 += 4 * lda;
