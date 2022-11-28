@@ -61,10 +61,14 @@ int CNAME(BLASLONG m, BLASLONG n, IFLOAT *a, BLASLONG lda, IFLOAT *b) {
       v2 = (uint16x8_t)vtrn2q_u32((uint32x4_t)v4, (uint32x4_t)v6);
       v3 = (uint16x8_t)vtrn2q_u32((uint32x4_t)v5, (uint32x4_t)v7);
 
-      vst1q_u16(b_offset, (uint16x8_t)vtrn1q_u64((uint64x2_t)v0, (uint64x2_t)v1));
-      vst1q_u16(b_offset + 8, (uint16x8_t)vtrn1q_u64((uint64x2_t)v2, (uint64x2_t)v3));
-      vst1q_u16(b_offset + 16, (uint16x8_t)vtrn2q_u64((uint64x2_t)v0, (uint64x2_t)v1));
-      vst1q_u16(b_offset + 24, (uint16x8_t)vtrn2q_u64((uint64x2_t)v2, (uint64x2_t)v3));
+      vst1_u16(b_offset, vget_low_u16(v0));
+      vst1_u16(b_offset + 4, vget_low_u16(v1));
+      vst1_u16(b_offset + 8, vget_low_u16(v2));
+      vst1_u16(b_offset + 12, vget_low_u16(v3));
+      vst1_u16(b_offset + 16, vget_high_u16(v0));
+      vst1_u16(b_offset + 20, vget_high_u16(v1));
+      vst1_u16(b_offset + 24, vget_high_u16(v2));
+      vst1_u16(b_offset + 28, vget_high_u16(v3));
 
       b_offset += 32;
       a_offset0 += 4 * lda;
